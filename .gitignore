@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+.envs/
+.env
+*.env
+
+# Logs
+logs/
+
+# System outputs
+System/Resurfacing/
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Optional: VSCode settings (if you use VSCode)
+.vscode/
+
+# Output files (Markdown resurfacing outputs are in your vault, not in repo)
+sample_output/
+
+# Ignore last_run.txt used by the Templater automation
+logs/last_run.txt
+
