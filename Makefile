@@ -1,7 +1,7 @@
 install:
 	uv pip install -r requirements.txt
 
-resurface:
+resurfacer:
 	python3 src/resurfacer.py
 
 clean-resurfacing:
@@ -12,4 +12,3 @@ tag-new-notes:
 
 dry-run-tag-new-notes:
 	python3 src/resurfacer.py --dry-run-tag-new-notes
-

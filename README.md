@@ -1,37 +1,88 @@
-# Obsidian Resurfacer
+# Obsidian Resurfacer 🚀
 
-Daily resurfacing engine for Obsidian vaults, with Python automation.
+**Purpose:**  
+Daily resurfacing system for Obsidian vaults.
+Promotes spaced repetition, better note growth, and keeps your vault alive.
+
+> 🌱 seed → 🌿 growing → 🌳 evergreen
+
+## Features
+
+- 🏷️ Auto-tag new notes with `#seed`
+- 🧮 Score notes based on age, neglect, and growth stage
+- 🗓️ Daily resurfacing output (Markdown)
+- 🧼 Manual cleanup of old resurfacing files
+- 💡 Safe dry-run mode for checking bulk tags
+- 🧩 Fully vault-safe (excludes system folders like `/00/`)
 
 ## Commands
 
-- `make resurface` — Generate resurfacing list.
-- `make tag-new-notes` — Tag new notes with #seed.
-- `make dry-run-tag-new-notes` — Preview what would be tagged.
-- `make clean-resurfacing` — Manual cleanup of resurfacing outputs.
-- `make install` — Install Python dependencies with uv.
+| Command                     | Description                              |
+|----------------------------|------------------------------------------|
+| `make resurface`            | Generate resurfacing list               |
+| `make tag-new-notes`        | Tag untagged notes with `#seed`         |
+| `make dry-run-tag-new-notes`| Preview new tags safely                 |
+| `make clean-resurfacing`    | Manually clean resurfacing outputs      |
+| `make install`              | Install Python dependencies via `uv`    |
 
-## .env Setup
+## Setup
 
-Copy `.envs/.env` and set your paths.
+1. Install dependencies:
+    ```bash
+    uv pip install -r requirements.txt
+    ```
 
-## Notes
+2. Copy and configure `.env`:
+    ```
+    VAULT_PATH=/absolute/path/to/vault
+    OUTPUT_PATH=/absolute/path/to/vault/Resurfacing
+    ```
 
-- Tags used: `#seed`, `#growing`, `#evergreen`
-- Resurfacing updates `last-reviewed:` automatically.
-- Clean, safe exclusions for system folders.
+3. Test run:
+    ```bash
+    make dry-run-tag-new-notes
+    ```
+
+4. When happy, apply tags:
+    ```bash
+    make tag-new-notes
+    ```
+
+5. Generate resurfacing list:
+    ```bash
+    make resurface
+    ```
 
 ## Templates
 
-Use your Obsidian Templates folder for:
-- New Seed Note
-- New Project Note
-- Resurfacing Auto Trigger
+Add these to your Obsidian `/Templates/` folder:
+
+- **New Seed Note.md**
+- **New Project Note.md**
+- **Resurfacing Auto Trigger.md**
 
 ## Dashboard
 
-Add this to your Control Centre:
+Add this to your Obsidian Dashboard for live visuals:
 
 ```dataview
+## 🌱 Notes by Growth Stage
+
+### 🚀 Seeds
 TABLE file.link AS "Note", created, last-reviewed
-FROM "System/Resurfacing"
-WHERE file.name = "resurfacing-" + dateformat(date(today), "yyyy-MM-dd") + ".md"
+FROM ""
+WHERE contains(tags, "seed")
+SORT created DESC
+
+### 🌿 Growing Notes
+TABLE file.link AS "Note", created, last-reviewed
+FROM ""
+WHERE contains(tags, "growing")
+SORT created DESC
+
+### 🌳 Evergreen Notes
+TABLE file.link AS "Note", created, last-reviewed
+FROM ""
+WHERE contains(tags, "evergreen")
+SORT created DESC
+

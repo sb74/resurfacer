@@ -16,8 +16,8 @@ logger = logging.getLogger(__name__)
 # --- Load .env Variables ---
 load_dotenv(dotenv_path=Path(".envs/.env"))
 
-VAULT_PATH = Path(os.getenv("VAULT_PATH"))
-OUTPUT_PATH = Path(os.getenv("OUTPUT_PATH"))
+VAULT_PATH = Path(os.getenv("VAULT_PATH")).resolve()
+OUTPUT_PATH = Path(os.getenv("OUTPUT_PATH")).resolve()
 RESURFACING_COUNT = int(os.getenv("RESURFACING_COUNT", 5))
 TAG_WEIGHTS = {
     "seed": int(os.getenv("SEED_WEIGHT", 3)),
@@ -26,16 +26,16 @@ TAG_WEIGHTS = {
 }
 RETENTION_DAYS = int(os.getenv("RETENTION_DAYS", 7))
 
-# Excluded folders and files for tagging
+# Excluded folders and files for tagging and processing
 EXCLUDED_PATHS = [
-    "/System/",
-    "/Templates/",
-    "/Daily/",
-    "/Journals/",
-    "/Work Notes/",
-    "/Inbox/",
-    "/00/",
-    "/Dashboard.md",
+    "System",
+    "Templates",
+    "Daily",
+    "Journals",
+    "Work Notes",
+    "Inbox",
+    "00",
+    "Dashboard.md",
 ]
 
 # --- Constants ---
@@ -43,6 +43,32 @@ TODAY = datetime.now().date()
 TARGET_FILENAME = f"resurfacing-{TODAY}.md"
 
 # --- Utility Functions ---
+
+
+def safe_note_paths():
+    """Yield only non-excluded .md files in the vault, skipping excluded directories properly."""
+    excluded_paths = [VAULT_PATH / Path(excluded) for excluded in EXCLUDED_PATHS]
+    for root, dirs, files in os.walk(VAULT_PATH):
+        root_path = Path(root).resolve()
+        # Skip the root folder if it's excluded
+        if any(
+            root_path == excluded or root_path.is_relative_to(excluded)
+            for excluded in excluded_paths
+        ):
+            continue
+        # Prune excluded directories
+        dirs[:] = [
+            d
+            for d in dirs
+            if not any(
+                (root_path / d).resolve() == excluded
+                or (root_path / d).resolve().is_relative_to(excluded)
+                for excluded in excluded_paths
+            )
+        ]
+        for file in files:
+            if file.endswith(".md"):
+                yield Path(root) / file
 
 
 def parse_note_metadata(note_path):
@@ -90,20 +116,14 @@ def update_last_reviewed(note):
         post = frontmatter.load(note["path"])
         post.metadata["last-reviewed"] = TODAY.strftime("%Y-%m-%d")
         with open(note["path"], "w") as f:
-            frontmatter.dump(post, f)
+            f.write(frontmatter.dumps(post))
         logger.info(f"Updated last-reviewed for {note['path'].name}")
     except Exception as e:
         logger.error(f"Failed to update {note['path']}: {e}")
 
 
-def is_excluded(note_path):
-    return any(excluded in str(note_path) for excluded in EXCLUDED_PATHS)
-
-
 def add_seed_tag_to_notes(dry_run=False):
-    for note_path in VAULT_PATH.rglob("*.md"):
-        if is_excluded(note_path):
-            continue
+    for note_path in safe_note_paths():
         post = frontmatter.load(note_path)
         tags = post.metadata.get("tags", [])
         if isinstance(tags, str):
@@ -119,7 +139,7 @@ def add_seed_tag_to_notes(dry_run=False):
                 if not post.metadata.get("last-reviewed"):
                     post.metadata["last-reviewed"] = TODAY.strftime("%Y-%m-%d")
                 with open(note_path, "w") as f:
-                    frontmatter.dump(post, f)
+                    f.write(frontmatter.dumps(post))
                 logger.info(f"Added #seed tag to {note_path}")
 
 
@@ -128,9 +148,7 @@ def add_seed_tag_to_notes(dry_run=False):
 
 def collect_notes():
     notes = []
-    for path in VAULT_PATH.rglob("*.md"):
-        if "System/Resurfacing" in str(path):
-            continue
+    for path in safe_note_paths():
         note_data = parse_note_metadata(path)
         if note_data and any(tag in note_data["tags"] for tag in TAG_WEIGHTS):
             notes.append(note_data)
